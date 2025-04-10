@@ -17,6 +17,8 @@ func GetRouter() *echo.Echo {
 	UserRouter := e.Group("/users/")
 	UserRouter.GET("", authApi.ListUser)
 	UserRouter.POST("", authApi.CreateUser)
+	UserRouter.POST("login/", authApi.Login)
+	UserRouter.POST("verify/", authApi.Verify)
 
 	return e
 }

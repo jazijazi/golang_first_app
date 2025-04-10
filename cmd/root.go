@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"httpproj1/apis"
@@ -9,6 +10,10 @@ import (
 	"httpproj1/migrations"
 	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -48,6 +53,19 @@ func main() {
 			if err := router.Start(":8080"); err != nil {
 				myslog.Error(err.Error())
 			}
+
+			// Wait for interrupt signal
+			quit := make(chan os.Signal, 1)                    // Create a channel to receive OS signals
+			signal.Notify(quit, os.Interrupt, syscall.SIGTERM) // Listen for interrupt (Ctrl+C) or termination signals
+			<-quit                                             // Wait for the signal to be received
+
+			// Graceful shutdown of the router
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second) // Set a timeout for graceful shutdown
+			defer cancel()                                                           // Ensure cancellation of the context when done                                                      // Ensure cancellation of the context when done
+			if err := router.Shutdown(ctx); err != nil {                             // Try shutting down the router
+				myslog.Error("Server Shutdown Failed: " + err.Error()) // Log an error if shutdown fails
+			}
+
 		},
 	}
 	var showConf = &cobra.Command{
