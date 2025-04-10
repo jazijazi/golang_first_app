@@ -17,8 +17,8 @@ var myslog *slog.Logger = logger.GetLogger()
 
 func run() {
 	// myslog := logger.GetLogger()
-	http.HandleFunc("/", apis.GetRoot)
-	http.HandleFunc("/create_product", apis.CreateProduct)
+	// http.HandleFunc("/", apis.GetRoot)
+	// http.HandleFunc("/create_product", apis.CreateProduct)
 
 	myslog.Info("Start Listening to 8080")
 	servErr := http.ListenAndServe(":8080", nil)

@@ -3,9 +3,10 @@ package migrations
 import (
 	// "fmt"
 	// jazidb "httpproj1/db"
+	"httpproj1/auth"
 	"httpproj1/initializers"
 	"httpproj1/logger"
-	"httpproj1/models"
+	"httpproj1/shop"
 	"log/slog"
 
 	_ "github.com/lib/pq"
@@ -25,9 +26,10 @@ func RunMigrations() {
 	SetUp()
 
 	initializers.DB.AutoMigrate(
-		&models.Brand{},
-		&models.Category{},
-		&models.Product{},
+		&shop.Brand{},
+		&shop.Category{},
+		&shop.Product{},
+		&auth.User{},
 	)
 	myslog.Info("Migration Complete")
 }
