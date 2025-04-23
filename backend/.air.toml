@@ -14,7 +14,7 @@ tmp_dir = "tmp"
   exclude_unchanged = false
   follow_symlink = false
   # full_bin is Full command to run app
-  full_bin = "go run cmd/root.go runapp"
+  full_bin = "go run ./cmd/root.go runapp"
   include_dir = []
   include_ext = ["go", "tpl", "tmpl", "html"]
   include_file = []
