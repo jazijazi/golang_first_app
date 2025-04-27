@@ -10,6 +10,12 @@ import (
 
 func GetRouter() *echo.Echo {
 	e := echo.New()
+
+	productRouter := e.Group("/products/")
+	productRouter.GET("/find", shopApi.GetProduct)
+	productRouter.GET("", shopApi.ListProduct)
+	productRouter.POST("", shopApi.CreateProduct)
+
 	brandRouter := e.Group("/brands/")
 	brandRouter.GET("", shopApi.ListBrand)
 	brandRouter.POST("", shopApi.CreateBrand)

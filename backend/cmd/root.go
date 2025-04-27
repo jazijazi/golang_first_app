@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"httpproj1/apis"
+	"httpproj1/bus"
 	"httpproj1/initializers"
 	"httpproj1/logger"
 	"httpproj1/migrations"
@@ -33,6 +34,17 @@ func run() {
 }
 
 func main() {
+	var cmdConsume = &cobra.Command{
+		Use:   "consume", //important command
+		Short: "Run Consume",
+		Long:  "Run Consume From Rmbq",
+		// Args:cobra.MinimumNArgs(1)
+		Run: func(cmd *cobra.Command, args []string) {
+			migrations.SetUp()
+			bus.CreateProduct()
+		},
+	}
+
 	var cmdMigrate = &cobra.Command{
 		Use:   "migrate", //important command
 		Short: "Run Migrations",
@@ -66,6 +78,13 @@ func main() {
 				myslog.Error("Server Shutdown Failed: " + err.Error()) // Log an error if shutdown fails
 			}
 
+			defer func() {
+				if err := initializers.MONGO.Disconnect(context.TODO()); err != nil {
+					myslog.Error("❌ Failed to disconnect from MongoDB:", err)
+				}
+				fmt.Println("🚀 Disconnected from MongoDB")
+			}()
+
 		},
 	}
 	var showConf = &cobra.Command{
@@ -88,6 +107,6 @@ func main() {
 	}
 
 	var rootCmd = &cobra.Command{Use: "jaziapp"}
-	rootCmd.AddCommand(cmdRun, cmdMigrate, showConf)
+	rootCmd.AddCommand(cmdConsume, cmdRun, cmdMigrate, showConf)
 	rootCmd.Execute()
 }

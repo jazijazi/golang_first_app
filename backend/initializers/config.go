@@ -12,6 +12,7 @@ type Config struct {
 	DBPort         string `mapstructure:"POSTGRES_PORT"`
 	ServerPort     string `mapstructure:"PORT"`
 	SECRETKEY      string `mapstructure:"SECRET_KEY"`
+	MongoDbUri     string `mapstructure:"MongoDbUri"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

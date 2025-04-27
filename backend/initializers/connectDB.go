@@ -1,14 +1,24 @@
 package initializers
 
 import (
+	"context"
 	"fmt"
-	"log"
+	"httpproj1/logger"
+	"log/slog"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 var DB *gorm.DB
+var MONGO *mongo.Client
+
+var myslog *slog.Logger = logger.GetLogger()
+
+var ProductCollection *mongo.Collection
 
 func ConnectDB(config *Config) {
 	var err error
@@ -16,7 +26,25 @@ func ConnectDB(config *Config) {
 
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Failed to connect to the Database")
+		myslog.Error("Failed to connect to the Postgres Database")
 	}
-	fmt.Println("🚀 Connected Successfully to the Database")
+	fmt.Println("🚀 Connected Successfully to the Postgres Database")
+
+	MONGO, err = mongo.Connect(options.Client().ApplyURI(config.MongoDbUri))
+	if err != nil {
+		myslog.Error("❌ Failed to connect to the Mongo Database:", err)
+		panic(err)
+	}
+	pingErr := MONGO.Ping(context.TODO(), nil)
+	if pingErr != nil {
+		myslog.Error("❌ Ping failed. Could not connect to MongoDB:", pingErr)
+	}
+	// defer func() {
+	// 	if err := MONGO.Disconnect(context.TODO()); err != nil {
+	// 		panic(err)
+	// 	}
+	// }()
+	fmt.Println("🚀 Connected Successfully to the Mongo Database")
+
+	ProductCollection = MONGO.Database("db").Collection("product")
 }
