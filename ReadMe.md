@@ -2,6 +2,42 @@
 
 This is a Golang project that utilizes several packages for different purposes, including validation, authentication, database management, environment configuration, and more. Below is a brief overview of the key dependencies used in this project:
 
+---
+```plaintext
+                  +------------------+
+                  |    PostgreSQL    |
+                  +------------------+
+                           ▲
+                           |
++----------------+         |
+|   Golang App   |---------▶
+| (API / Backend)|         |
+|                |         |
+| - Handles DBs  |         ▼
+|                |     +------------------+    
++------┬-------+       |     MongoDB      |
+       |               |   - products     |   
+       |               +------------------+             
+       ▼              
++--------------+      
+|   RabbitMQ   |      
++--------------+      
+         ▲              
+         | 
+         |             
++--------┴--------+     
+|    Crawler App  |     
+| (Worker/Service)|          
+| - Sends results |        
++-----------------+        
+             
+```
+
+---
+
+
+
+
 ## Dependencies
 
 ### 1. [github.com/go-ozzo/ozzo-validation](https://github.com/go-ozzo/ozzo-validation)
@@ -31,12 +67,19 @@ Viper is a configuration management package that works well with JSON, TOML, YAM
 ### 9. [github.com/subosito/gotenv](https://github.com/subosito/gotenv)
 A simple package for loading environment variables from `.env` files into the Go application. This is especially useful for managing environment-specific configuration without hardcoding values.
 
+### 10. [github.com/rabbitmq/amqp091-go](github.com/rabbitmq/amqp091-go)
+A simple package for using rabbitmq in golang
+
+### 10. [go.mongodb.org/mongo-driver/v2/mongo](https://www.mongodb.com/docs/drivers/go/current/quick-start/)
+A simple package for using mongodb in golang
+
 ## Setup
 
 1. Clone this repository.
 2. Install the required dependencies using `go get`.
 3. Copy the `.env-example` file to `.env` and fill in the required environment variables.
 4. Configure your environment variables using `.env` or by setting them manually.
+5. go to crawler directory and go get . too!
 
 ## Running the Project
 
@@ -44,4 +87,7 @@ A simple package for loading environment variables from `.env` files into the Go
 2. To run the project, execute the following command in your terminal:
    
    ```bash
-   go run cmd/root.go runapp
+   run app : go run cmd/root.go runapp
+   run consume : go run cmd/root.go consume
+   
+   run publisher: cd crawler && go run .

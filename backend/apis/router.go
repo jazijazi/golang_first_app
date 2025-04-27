@@ -12,7 +12,7 @@ func GetRouter() *echo.Echo {
 	e := echo.New()
 
 	productRouter := e.Group("/products/")
-	productRouter.GET("/find", shopApi.GetProduct)
+	productRouter.GET("find/", shopApi.GetProduct)
 	productRouter.GET("", shopApi.ListProduct)
 	productRouter.POST("", shopApi.CreateProduct)
 

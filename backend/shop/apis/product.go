@@ -9,37 +9,62 @@ import (
 )
 
 func ListProduct(c echo.Context) error {
-	products := shop.ListProductService()
+	products, err := shop.ListProductService(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"error": err.Error(),
+		})
+	}
 	return c.JSON(http.StatusOK, products)
+}
+
+func GetProduct(c echo.Context) error {
+	title := c.QueryParam("title")
+	if title == "" {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"error": "Title query parameter is required",
+		})
+	}
+
+	product, err := shop.GetProductService(title)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, echo.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, product)
 }
 
 func CreateProduct(c echo.Context) error {
 	var product shop.ProductRequest
 
+	// Bind request body to product struct
 	if err := c.Bind(&product); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		//Use echo.Map instead of map[string]string for JSON responses (it's cleaner with Echo).
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"error": "Invalid request body: " + err.Error(),
+		})
 	}
 
-	validationErr := validation.ValidateStruct(&product,
+	// Validate the product fields
+	if err := validation.ValidateStruct(&product,
 		validation.Field(&product.Title, validation.Required, validation.Length(2, 50)),
 		validation.Field(&product.Price, validation.Required),
-	)
-
-	if validationErr != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": validationErr.Error()})
+	); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"error": "Validation failed: " + err.Error(),
+		})
 	}
 
-	db_err := shop.CreateProductService(&product)
-
-	if db_err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": db_err.Error()})
+	// Call service to create product
+	if err := shop.CreateProductService(&product); err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"error": "Failed to create product: " + err.Error(),
+		})
 	}
 
-	return c.JSON(http.StatusOK, true)
-}
-
-func GetProduct(c echo.Context) error {
-	title := c.QueryParam("title")
-	product := shop.GetProductService(title)
-	return c.JSON(http.StatusOK, product)
+	return c.JSON(http.StatusOK, echo.Map{
+		"success": true,
+	})
 }

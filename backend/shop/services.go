@@ -10,30 +10,39 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-func GetProductService(title string) []byte {
+func GetProductService(title string) (bson.M, error) {
 	var result bson.M
 
-	err := initializers.ProductCollection.FindOne(context.TODO(), bson.D{{"title", title}}).
-		Decode(&result)
-
-	if err == mongo.ErrNoDocuments {
-		fmt.Println("No Document was found")
+	//bson is Binary JSON, MongoDB's internal format.
+	//bson.D  ---->   Ordered list of key-value pairs to form MongoDB queries
+	//bson.M  ---->   is just a shorthand for map[string]interface{}
+	//bson.M  ---->   keys are string and values are interface{} (could be string, int, bool, array, object, anything)
+	err := initializers.ProductCollection.FindOne(context.TODO(), bson.D{{"title", title}}).Decode(&result)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, fmt.Errorf("product with title '%s' not found", title)
+		}
+		return nil, err
 	}
 
-	jsonData, _ := json.MarshalIndent(result, "", "    ")
-	return jsonData
+	return result, nil
 }
 
-func ListProductService() []interface{} {
+func ListProductService(ctx context.Context) ([]bson.M, error) {
 	filter := bson.D{{}}
-	cursor, err := initializers.ProductCollection.Find(context.TODO(), filter)
 
-	var results []interface{}
-	if err = cursor.All(context.TODO(), &results); err != nil {
-		panic(err)
+	cursor, err := initializers.ProductCollection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
 	}
-	return results
+	defer cursor.Close(ctx) // good practice!
 
+	var results []bson.M
+	if err = cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }
 
 func CreateProductService(request *ProductRequest) error { //*ProductRequest
@@ -46,8 +55,6 @@ func ConsumeProductService(request []byte) error {
 	if err := json.Unmarshal(request, &d); err != nil {
 		panic(err)
 	}
-	// CreateProductService(d)
-	// fmt.Println(request)
 	_, err := initializers.ProductCollection.InsertOne(context.TODO(), d)
 	if err != nil {
 		panic(err)
