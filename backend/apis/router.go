@@ -24,6 +24,7 @@ func GetRouter() *echo.Echo {
 	UserRouter.GET("", authApi.ListUser)
 	UserRouter.POST("", authApi.CreateUser)
 	UserRouter.POST("login/", authApi.Login)
+	UserRouter.POST("refresh/", authApi.Refresh)
 	UserRouter.POST("verify/", authApi.Verify)
 
 	return e

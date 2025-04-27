@@ -55,11 +55,26 @@ func Login(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": valiadtion_err.Error()})
 	}
 
+	// Call Login function
 	loginResponse, loginErr := login(request)
 	if loginErr != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": loginErr.Error()})
 	}
-	return c.JSON(http.StatusOK, loginResponse)
+
+	// Set Refresh Token as HTTP-only cookie
+	c.SetCookie(&http.Cookie{
+		Name:     "refresh_token",
+		Value:    loginResponse.RefreshToken,
+		Path:     "/",
+		MaxAge:   60 * 60 * 24 * 7, // 7 days
+		HttpOnly: true,
+		Secure:   false, // Set to true if using HTTPS
+		SameSite: http.SameSiteStrictMode,
+	})
+	// Return Access Token in the response body
+	return c.JSON(http.StatusOK, map[string]string{
+		"token": loginResponse.AccessToken,
+	})
 }
 
 func Verify(c echo.Context) error {
@@ -81,4 +96,19 @@ func Verify(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": verifyError.Error()})
 	}
 	return c.JSON(http.StatusBadRequest, response)
+}
+
+func Refresh(c echo.Context) error {
+	refreshToken, err := c.Cookie("refresh_token")
+	if err != nil || refreshToken.Value == "" {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Refresh token is missing"})
+	}
+
+	newAccessToken, refreshErr := refresh(refreshToken.Value)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": refreshErr.Error()})
+	}
+	return c.JSON(http.StatusOK, map[string]string{
+		"token": newAccessToken,
+	})
 }

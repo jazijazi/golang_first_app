@@ -59,14 +59,13 @@ func login(request LoginRequest) (LoginResponse, error) {
 
 	config, err := initializers.LoadConfig(".")
 	if err != nil {
-		// myslog.Error("Error in Load Config File!")
 		fmt.Println(err.Error())
 	}
 
 	if checkResultError := user.checkPassword(request.Password); checkResultError != nil {
 		return LoginResponse{}, checkResultError
 	} else {
-		// return LoginResponse{Token: "oooooooooooo"}, err
+		// Create Claims for Access Token
 		claims := MyCustomClaims{
 			RegisteredClaims: jwt.RegisteredClaims{
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 2)),
@@ -74,13 +73,29 @@ func login(request LoginRequest) (LoginResponse, error) {
 			Name: user.Name,
 			Role: user.Role,
 		}
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		accessToken, accessTokenError := token.SignedString([]byte(config.SECRETKEY))
+		// Create Access Token
+		accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		accessTokenStr, accessTokenError := accessToken.SignedString([]byte(config.SECRETKEY))
 		if accessTokenError != nil {
 			return LoginResponse{}, accessTokenError
 		}
-		return LoginResponse{Token: accessToken}, nil
 
+		// Create Refresh Token with a longer expiration
+		refreshClaims := MyCustomClaims{
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)), // Set expiration time (1 week)
+			},
+			Name: user.Name,
+			Role: user.Role,
+		}
+		refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+		refreshTokenStr, refreshTokenError := refreshToken.SignedString([]byte(config.SECRETKEY))
+		if refreshTokenError != nil {
+			return LoginResponse{}, refreshTokenError
+		}
+
+		// Return Access Token and Refresh Token
+		return LoginResponse{AccessToken: accessTokenStr, RefreshToken: refreshTokenStr}, nil
 	}
 }
 
@@ -101,4 +116,41 @@ func verify(request VerifyRequest) (VerifyResponse, error) {
 	}
 	return VerifyResponse{IsValid: false}, err
 
+}
+
+func refresh(refreshtoken string) (string, error) {
+	// Parse and validate the refresh token
+	config, _ := initializers.LoadConfig(".")
+	claims := &MyCustomClaims{}
+
+	token, err := jwt.ParseWithClaims(refreshtoken, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(config.SECRETKEY), nil
+	})
+
+	if err != nil || !token.Valid {
+		return "", fmt.Errorf("invalid or expired refresh token")
+	}
+
+	userName := claims.Name
+	userRole := claims.Role
+
+	fmt.Println("========")
+	fmt.Println(claims.Name)
+	fmt.Println(claims.Role)
+	fmt.Println("========")
+
+	// If the refresh token is valid, create a new access token
+	newClaims := MyCustomClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 2)), // New access token valid for 2 hours
+		},
+		Name: userName,
+		Role: userRole,
+	}
+	newAccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, newClaims)
+	newAccessTokenStr, err := newAccessToken.SignedString([]byte(config.SECRETKEY))
+	if err != nil {
+		return "", fmt.Errorf("error generating new access token")
+	}
+	return newAccessTokenStr, nil
 }
